@@ -1,11 +1,12 @@
-const { query } = require("express")
+require("dotenv").config()
+
 const { nanoid } = require("nanoid")
-const {session} = require("../utils/database.js")
+const {dbConnect} = require("../utils/database.js")
 
 class UserController {
   static getAllUsers = async (req, res) => {
+    const session = dbConnect()
     try {
-      console.log("hello")
       const query = "MATCH (users:User) RETURN users"
       const users = await session.run(query)
 
@@ -22,6 +23,7 @@ class UserController {
   }
 
   static getUser = async (req, res) => {
+    const session = dbConnect()
     const {id} = req.params
 
     if (id) {
@@ -29,9 +31,13 @@ class UserController {
         const query = "MATCH (user:User{id: $id}) RETURN user"
         const user = await session.run(query, {id})
 
-        const userData = user.records[0].get(0).properties
+        if (user.records.length > 0) {
+          const userData = user.records[0].get(0).properties
 
-        res.status(200).json(userData)
+          res.status(200).json(userData)
+        } else {
+          res.status(200).json(null)
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -43,11 +49,12 @@ class UserController {
   }
 
   static createUser = async (req, res) => {
+    const session = dbConnect()
     const {name, email} = req.body
 
     if (name && email) {
       try {
-        query = "CREATE (user:User{id: $id, name: $name, email: $email}) RETURN user"
+        const query = "CREATE (user:User{id: $id, name: $name, email: $email}) RETURN user"
         const user = await session.run(query, {id: nanoid(), name, email})
 
         const userData = user.records[0].get(0).properties
