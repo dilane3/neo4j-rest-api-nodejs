@@ -1,47 +1,31 @@
-require("dotenv").config()
+const { UserModel } = require("../models/userModel.js")
 
-const { nanoid } = require("nanoid")
-const {dbConnect} = require("../utils/database.js")
 
 class UserController {
   static getAllUsers = async (req, res) => {
-    const session = dbConnect()
-    try {
-      const query = "MATCH (users:User) RETURN users"
-      const users = await session.run(query)
+    const user = new UserModel()
 
-      const usersData = users.records.map(user => {
-        return user.get(0)?.properties
-      })
+    const {data, error} = await user.getAllUsers()
 
-      res.status(200).json(usersData)
-    } catch(err) {
-      res.sendStatus(500)
-    } finally {
-      await session.close()
+    if (data) {
+      return res.status(200).json(data)
+    } else {
+      return res.status(500).json(error)
     }
   }
 
   static getUser = async (req, res) => {
-    const session = dbConnect()
     const {id} = req.params
 
     if (id) {
-      try {
-        const query = "MATCH (user:User{id: $id}) RETURN user"
-        const user = await session.run(query, {id})
+      const user = new UserModel()
 
-        if (user.records.length > 0) {
-          const userData = user.records[0].get(0).properties
+      const {data, error} = await user.getUser(id)
 
-          res.status(200).json(userData)
-        } else {
-          res.status(200).json(null)
-        }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        await session.close()
+      if (data !== undefined) {
+        res.status(200).json(data)
+      } else {
+        res.status(500).json(error)
       }
     } else {
       return res.sendStatus(500)
@@ -49,24 +33,57 @@ class UserController {
   }
 
   static createUser = async (req, res) => {
-    const session = dbConnect()
     const {name, email} = req.body
 
     if (name && email) {
-      try {
-        const query = "CREATE (user:User{id: $id, name: $name, email: $email}) RETURN user"
-        const user = await session.run(query, {id: nanoid(), name, email})
+      const user = new UserModel()
 
-        const userData = user.records[0].get(0).properties
+      const {data, error} = await user.createUser({name, email})
 
-        res.status(200).json(userData)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        await session.close()
+      if (data) {
+        res.status(201).json(data)
+      } else {
+        res.status(500).json(error)
       }
     } else {
       return res.sendStatus(500)
+    }
+  }
+
+  static updateUserName = async (req, res) => {
+    const {id} = req.params
+    const {name} = req.body
+
+    if (id, name) {
+      const user = new UserModel()
+
+      const {data, error} = await user.updateUser(id, name)
+
+      if (data !== undefined) {
+        res.status(200).json(data)
+      } else {
+        res.status(500).json(error)
+      }
+    } else {
+      return res.sendStatus(500)
+    }
+  }
+
+  static deleteUser = async (req, res) => {
+    const {id} = req.params
+
+    if (id) {
+      const user = new UserModel()
+
+      const {data, error} = await user.deleteUser(id)
+
+      if (data !== undefined) {
+        res.status(200).json(data)
+      } else {
+        res.status(500).json(error)
+      }
+    } else {
+      res.sendStatus(500)
     }
   }
 }
