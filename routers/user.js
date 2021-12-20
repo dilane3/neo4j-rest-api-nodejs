@@ -6,7 +6,8 @@ const {
   getUser,
   createUser,
   updateUserName,
-  deleteUser
+  deleteUser,
+  addFriend
 } = UserController
 
 const userRouter = express.Router()
@@ -16,5 +17,6 @@ userRouter.get("/:id", getUser)
 userRouter.post("/", createUser)
 userRouter.patch("/:id", updateUserName)
 userRouter.delete("/:id", deleteUser)
+userRouter.post("/add_friend", addFriend)
 
 module.exports = {userRouter}

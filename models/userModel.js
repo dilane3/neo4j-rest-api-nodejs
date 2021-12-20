@@ -109,15 +109,45 @@ class UserModel {
     const session = dbConnect()
 
     try {
-      const query = "MATCH (user:User{id: $id}) DELETE user RETURN user"
-      const user = await session.run(query, {id})
+      const query = `
+        MATCH (user:User{id: $id}) -[f:FRIEND]-> (:User) 
+        DELETE f, user
+      `
+      await session.run(query, {id})
 
-      if (user.records.length > 0) {
-        return {data: "user deleted successfully"}
+      return {data: "user deleted successfully"}
+    } catch(err) {
+      return {error: "error occurs while deleting a user"}
+    } finally {
+      session.close()
+    }
+  }
+
+  async addFriend (id1, id2, heart) {
+    const session = dbConnect()
+
+    try {
+      const query = `
+        MATCH (user1:User{id: $id1}), (user2:User{id: $id2})
+        CREATE (user1) -[:FRIEND{heart: $heart}]-> (user2)
+        RETURN user1, user2
+      `
+
+      const result = await session.run(query, {id1, id2, heart})
+
+      if (result.records.length > 0) {
+        const user1 = result.records[0].get("user1").properties
+        const user2 = result.records[0].get("user2").properties
+
+        if (user1 && user2) {
+          return {data: {user1, user2}}
+        } else {
+          return {data: null}
+        }
       } else {
         return {data: null}
       }
-    } catch(err) {
+    } catch (err) {
       return {error: "error occurs while deleting a user"}
     } finally {
       session.close()

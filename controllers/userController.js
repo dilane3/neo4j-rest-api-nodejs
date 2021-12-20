@@ -86,6 +86,24 @@ class UserController {
       res.sendStatus(500)
     }
   }
+
+  static addFriend = async (req, res) => {
+    const {id1, id2, heart} = req.body
+
+    if (id1, id2) {
+      const user = new UserModel()
+
+      const {data, error} = await user.addFriend(id1, id2, heart)
+
+      if (data !== undefined) {
+        res.status(201).json(data)
+      } else {
+        res.status(500).json(error)
+      }
+    } else {
+      res.sendStatus(500)
+    }
+  }
 }
 
 module.exports = {UserController}
