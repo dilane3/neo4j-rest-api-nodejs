@@ -1,5 +1,10 @@
+require("dotenv").config()
+
 const { nanoid } = require("nanoid")
 const {dbConnect} = require("../utils/database.js")
+const jwt = require("jsonwebtoken")
+
+const {SECRET_CODE} = process.env
 
 class UserModel {
   /**
@@ -55,7 +60,7 @@ class UserModel {
    * @param {{name: String, email: String}} payload 
    * @returns User | Error message
    */
-  async createUser (payload) {
+  async signup (payload) {
     const session = dbConnect()
     const {name, email} = payload
 
@@ -65,9 +70,44 @@ class UserModel {
 
       const userData = user.records[0].get('user').properties
 
-      return {data: userData}
+      console.log("hello1")
+
+      const token = jwt.sign({...userData}, SECRET_CODE, {expiresIn: '5min'})
+
+      console.log("hello2")
+
+      return {data: {...userData, token}}
     } catch (err) {
-      return {error: "error occurs while getting a user"}
+      return {error: "error occurs while creating a user"}
+    } finally {
+      await session.close()
+    }
+  }
+
+  async signin(username) {
+    const session = dbConnect()
+
+    try {
+      const query = `
+        MATCH (user:User{name: $username})
+        RETURN user
+      `
+
+      const result = await session.run(query, {username})
+
+      if (result.records.length > 0) {
+        const userData = result.records[0].get('user').properties
+
+        const token = jwt.sign({...userData}, SECRET_CODE, {expiresIn: '5min'})
+
+        if (token) {
+          return {data: {...userData, token}}
+        }
+      } else {
+        return {data: null}
+      }
+    } catch (err) {
+      return {error: "Error while connecting the user"}
     } finally {
       await session.close()
     }
